@@ -1,5 +1,11 @@
+
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:pro_map/models/map_model.dart';
+import 'package:pro_map/services/http_service.dart';
 import 'package:yandex_mapkit/yandex_mapkit.dart';
 
 class HomePage extends StatefulWidget {
@@ -10,10 +16,15 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  MapModel? mapModel;
+  TextEditingController controller = TextEditingController();
   bool isLoading = false;
+  bool isTextLoading = false;
   late Position myPosition;
   List<MapObject> mapObjects = [];
   late YandexMapController yandexMapController;
+  String speed = "0";
+  List<String> suggestList = [];
 
   Future<Position> _determinePosition() async {
     bool serviceEnabled;
@@ -44,58 +55,58 @@ class _HomePageState extends State<HomePage> {
 
   void findMe(){
     yandexMapController.moveCamera(
-      CameraUpdate.newCameraPosition(
-        CameraPosition(
-            target: Point(
-                latitude: myPosition.latitude, 
-                longitude: myPosition.longitude,
-            ),
-            zoom: 20
+        CameraUpdate.newCameraPosition(
+            CameraPosition(
+                target: Point(
+                  latitude: myPosition.latitude,
+                  longitude: myPosition.longitude,
+                ),
+                zoom: 20
+            )
         )
-      )
     );
   }
 
   void onMapCreated(YandexMapController controller){
     yandexMapController = controller;
     yandexMapController.moveCamera(
-      CameraUpdate.newCameraPosition(
-        CameraPosition(
-          target: Point(
-              latitude: myPosition.latitude,
-              longitude: myPosition.longitude
-          ),
-          zoom: 15
+        CameraUpdate.newCameraPosition(
+            CameraPosition(
+                target: Point(
+                    latitude: myPosition.latitude,
+                    longitude: myPosition.longitude
+                ),
+                zoom: 15
+            )
         )
-      )
     );
 
     mapObjects.add(
-      PlacemarkMapObject(
-          mapId: const MapObjectId("address"),
-          point: Point(
-              latitude: myPosition.latitude,
-              longitude: myPosition.longitude
-          ),
-          icon: PlacemarkIcon.single(
-            PlacemarkIconStyle(
-                image: BitmapDescriptor.fromAssetImage("assets/images/gps.png"),
-                scale: 0.3
+        PlacemarkMapObject(
+            mapId: const MapObjectId("address"),
+            point: Point(
+                latitude: myPosition.latitude,
+                longitude: myPosition.longitude
             ),
-          )
-      )
+            icon: PlacemarkIcon.single(
+              PlacemarkIconStyle(
+                  image: BitmapDescriptor.fromAssetImage("assets/images/gps.png"),
+                  scale: 0.3
+              ),
+            )
+        )
     );
 
     setState(() {});
   }
 
-  void putLabel(Point point){
+  void putLabel({required double lan, required double lon, required String id}){
     mapObjects.add(
         PlacemarkMapObject(
-            mapId: MapObjectId("address${point.longitude.toString().substring(point.longitude.toString().length-4)}"),
+            mapId: MapObjectId("address${lon.toString().substring(lon.toString().length-4)}"),
             point: Point(
-                latitude: point.latitude,
-                longitude: point.longitude
+                latitude: lan,
+                longitude: lon
             ),
             icon: PlacemarkIcon.single(
               PlacemarkIconStyle(
@@ -133,21 +144,80 @@ class _HomePageState extends State<HomePage> {
         drivingOptions: const DrivingOptions()
     );
 
-    var result = await road.$2;
-    result.routes?.asMap().forEach(
-        (key, value){
-          mapObjects.add(
-            PolylineMapObject(
-                mapId: MapObjectId("route_$key"),
-                polyline: Polyline(points: value.geometry.points),
-                strokeColor: Colors.red,
-                strokeWidth: 4
-            )
-          );
-        }
-    );
-
+    var result = await road.result;
+    if(result.routes!.isNotEmpty){
+      for (var element in result.routes ?? []) {
+        mapObjects.add(
+          PolylineMapObject(
+            mapId: MapObjectId("route_${end.latitude.toString()}"),
+            polyline: Polyline(
+              points: element.geometry,
+            ),
+            strokeColor: Colors.green,
+            strokeWidth: 4,
+          ),
+        );
+      }
+    }
     setState(() {});
+
+  }
+
+  Future<void> goLive()async{
+    Geolocator.getPositionStream(
+        locationSettings: const LocationSettings()
+    ).listen((data){
+      speed = data.speed.toStringAsFixed(3);
+
+      yandexMapController.moveCamera(
+          CameraUpdate.newCameraPosition(
+              CameraPosition(
+                  target: Point(
+                      latitude: data.latitude,
+                      longitude: data.longitude
+                  ),
+                  zoom: 20
+              )
+          )
+      );
+
+      putLabel(
+          lan: data.latitude,
+          lon: data.longitude,
+          id: data.latitude.toString()
+      );
+
+      mapObjects.removeRange(1, mapObjects.length);
+      setState(() {
+
+      });
+    });
+
+
+  }
+
+  Future<void> getData(String text)async{
+    log("1234");
+    isTextLoading = false;
+
+    setState(() {
+
+    });
+    String? data = await DioService.sendRequest({
+      "text": text,
+      "apiKey": "&apikey=f917c64e-c826-43b8-8deb-228f30d6a0ad"
+    });
+
+    log("null");
+    if(data!=null){
+      mapModel =  mapModelFromJson(data);
+      log("if");
+      isTextLoading = true;
+      setState(() {
+
+      });
+    }
+
 
   }
 
@@ -161,31 +231,111 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: isLoading ? Stack(
+      backgroundColor: Colors.black87,
+      appBar: AppBar(
+        backgroundColor: Colors.black87,
+        title: const Text("Location App"),
+        titleTextStyle: const TextStyle(
+            fontSize: 22,
+            color: Colors.white
+        ),
+        centerTitle: true,
+      ),
+      body: isLoading ? Column(
         children: [
-          YandexMap(
-            nightModeEnabled: true,
-            mode2DEnabled: true,
-            onMapCreated: onMapCreated,
-            onMapTap: (point){
-              putLabel(point);
-              makeRoad(myPosition, point);
-            },
-            mapObjects: mapObjects,
-          )
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            child: TextField(
+              controller: controller,
+              onChanged: (text)async{
+                await getData(text);
+              },
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: Colors.black87,
+                hintText: "Search",
+                hintStyle: const TextStyle(
+                    fontSize: 22,
+                    color: Colors.white
+                ),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(20)
+                ),
+                focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(20)
+                ),
+              ),
+            ),
+          ),
+
+          isTextLoading ? Column(
+            children: [
+              ListView.builder(
+                itemBuilder: (context, index){
+                  return Text(mapModel!.results[index].title.toString(),
+                  style: const TextStyle(
+                    color: Colors.red
+                  ),);
+                },
+                itemCount: mapModel!.results.length,
+              )
+            ],
+          ): Expanded(
+            child: YandexMap(
+              nightModeEnabled: true,
+              mode2DEnabled: true,
+              onMapCreated: onMapCreated,
+              onMapTap: (point){
+                putLabel(lon: point.longitude, lan: point.latitude, id: point.latitude.toString());
+                makeRoad(myPosition, point);
+              },
+              mapObjects: mapObjects,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Container(
+              alignment: Alignment.center,
+              height: 50,
+              width: 130,
+              decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  color: Colors.white,
+                  border: Border.all(
+                      color: Colors.black,
+                      width: 2
+                  )
+              ),
+              child: Text("Speed: $speed m/s"),
+            ),
+          ),
         ],
       ) : const Center(
         child: CircularProgressIndicator(
           color: Colors.blue,
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: (){
-          findMe();
-        },
-        child: const Icon(
-          Icons.gps_fixed
-        ),
+      floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          FloatingActionButton(
+            onPressed: () async{
+              await goLive();
+            },
+            child: const Icon(Icons.run_circle),
+          ),
+
+          const SizedBox(height: 10),
+
+          FloatingActionButton(
+            onPressed: (){
+              findMe();
+            },
+            child: const Icon(
+                Icons.gps_fixed
+            ),
+          ),
+        ],
       ),
     );
   }
