@@ -19,7 +19,9 @@ class MapModel {
       );
 
   factory MapModel.fromJson(Map<String, dynamic> json) => MapModel(
-    results: List<Result>.from(json["results"].map((x) => Result.fromJson(x))),
+    results: json["results"] == null
+        ? []
+        : List<Result>.from(json["results"].map((x) => Result.fromJson(x))),
   );
 
   Map<String, dynamic> toJson() => {
@@ -62,12 +64,12 @@ class Result {
       );
 
   factory Result.fromJson(Map<String, dynamic> json) => Result(
-    title: Title.fromJson(json["title"]),
-    subtitle: Subtitle.fromJson(json["subtitle"]),
-    tags: List<String>.from(json["tags"].map((x) => x)),
-    distance: Distance.fromJson(json["distance"]),
-    address: Address.fromJson(json["address"]),
-    uri: json["uri"],
+    title: json["title"] == null ? Title(text: '', hl: []) : Title.fromJson(json["title"]),
+    subtitle: json["subtitle"] == null ? Subtitle(text: '') : Subtitle.fromJson(json["subtitle"]),
+    tags: json["tags"] == null ? [] : List<String>.from(json["tags"].map((x) => x)),
+    distance: json["distance"] == null ? Distance(text: '', value: 0) : Distance.fromJson(json["distance"]),
+    address: json["address"] == null ? Address(formattedAddress: '', component: []) : Address.fromJson(json["address"]),
+    uri: json["uri"] ?? '',
   );
 
   Map<String, dynamic> toJson() => {
@@ -99,8 +101,8 @@ class Address {
       );
 
   factory Address.fromJson(Map<String, dynamic> json) => Address(
-    formattedAddress: json["formatted_address"],
-    component: List<Component>.from(json["component"].map((x) => Component.fromJson(x))),
+    formattedAddress: json["formatted_address"] ?? '',
+    component: json["component"] == null ? [] : List<Component>.from(json["component"].map((x) => Component.fromJson(x))),
   );
 
   Map<String, dynamic> toJson() => {
@@ -128,8 +130,8 @@ class Component {
       );
 
   factory Component.fromJson(Map<String, dynamic> json) => Component(
-    name: json["name"],
-    kind: List<String>.from(json["kind"].map((x) => x)),
+    name: json["name"] ?? '',
+    kind: json["kind"] == null ? [] : List<String>.from(json["kind"].map((x) => x)),
   );
 
   Map<String, dynamic> toJson() => {
@@ -157,8 +159,8 @@ class Distance {
       );
 
   factory Distance.fromJson(Map<String, dynamic> json) => Distance(
-    text: json["text"],
-    value: json["value"]?.toDouble(),
+    text: json["text"] ?? '',
+    value: (json["value"] ?? 0).toDouble(),
   );
 
   Map<String, dynamic> toJson() => {
@@ -182,7 +184,7 @@ class Subtitle {
       );
 
   factory Subtitle.fromJson(Map<String, dynamic> json) => Subtitle(
-    text: json["text"],
+    text: json["text"] ?? '',
   );
 
   Map<String, dynamic> toJson() => {
@@ -209,8 +211,8 @@ class Title {
       );
 
   factory Title.fromJson(Map<String, dynamic> json) => Title(
-    text: json["text"],
-    hl: List<Hl>.from(json["hl"].map((x) => Hl.fromJson(x))),
+    text: json["text"] ?? '',
+    hl: json["hl"] == null ? [] : List<Hl>.from(json["hl"].map((x) => Hl.fromJson(x))),
   );
 
   Map<String, dynamic> toJson() => {
@@ -238,8 +240,8 @@ class Hl {
       );
 
   factory Hl.fromJson(Map<String, dynamic> json) => Hl(
-    begin: json["begin"],
-    end: json["end"],
+    begin: json["begin"] ?? 0,
+    end: json["end"] ?? 0,
   );
 
   Map<String, dynamic> toJson() => {

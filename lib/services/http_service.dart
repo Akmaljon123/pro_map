@@ -1,44 +1,34 @@
+import 'dart:convert';
 import 'dart:developer';
+import 'dart:io';
 
-import 'package:dio/dio.dart';
+class HttpService {
+  static Future<String?> get(String text) async {
+    HttpClient httpClient = HttpClient();
 
-class DioService {
-  static final BaseOptions _option = BaseOptions(
-    connectTimeout: const Duration(seconds: 100),
-    receiveTimeout: const Duration(seconds: 100),
-    sendTimeout: const Duration(seconds: 100),
-    baseUrl: "https://suggest-maps.yandex.ru",
-    validateStatus: (statusCode) => statusCode! < 500, // Allow up to 499 to catch client and server errors
-    receiveDataWhenStatusError: true,
-  );
-
-  static final dio = Dio(_option);
-  static String? sessionId;
-
-  static Future<String?> sendRequest(Map<String, dynamic> param) async {
     try {
-      Response response = await dio.post("/v1/suggest", queryParameters: param);
+      Uri url = Uri.https("suggest-maps.yandex.ru", "/v1/suggest", {
+        "text": text,
+        "apikey": "f917c64e-c826-43b8-8deb-228f30d6a0ad",
+        "lang": "uz"
+      });
+      HttpClientRequest request = await httpClient.getUrl(url);
+      request.headers.set("Content-Type", "application/json");
+      request.headers.set("Accept", "application/json");
 
-      log('Response data: ${response.data}');
-      log('Response status code: ${response.statusCode}');
-
-      if (response.statusCode! <= 201) {
-        return response.data;
+      HttpClientResponse response = await request.close();
+      log("${response.statusCode}");
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        String data = await response.transform(utf8.decoder).join();
+        return data;
       } else {
-        log('Request failed with status: ${response.statusCode}');
         return null;
       }
-    } on DioException catch (e) {
-      if (e.response != null) {
-        log('Dio error response data: ${e.response!.data}');
-        log('Dio error response status code: ${e.response!.statusCode}');
-      } else {
-        log('Dio error: $e');
-      }
-      return null;
     } catch (e) {
-      log('General error: $e');
+      log("Error: $e");
       return null;
+    } finally {
+      httpClient.close();
     }
   }
 }
