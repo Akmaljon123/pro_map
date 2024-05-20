@@ -1,6 +1,4 @@
-import 'dart:developer';
 import 'package:flutter/material.dart';
-import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:pro_map/models/map_model.dart';
 import 'package:pro_map/services/http_service.dart';
@@ -126,7 +124,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> makeRoad(Position start, Point end) async {
-    var road = await YandexDriving.requestRoutes(
+    var road = YandexDriving.requestRoutes(
       points: [
         RequestPoint(
           point: Point(
@@ -165,7 +163,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> makeRoadBicycle(Position start, Point end) async {
-    var road = await YandexBicycle.requestRoutes(
+    var road = YandexBicycle.requestRoutes(
       points: [
         RequestPoint(
           point: Point(
@@ -233,17 +231,17 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> getData(String text) async {
-    log("1234");
+    
     isTextLoading = false;
 
     setState(() {});
 
     String? data = await HttpService.get(text);
 
-    log("null");
+    
     if (data != null) {
       mapModel = mapModelFromJson(data);
-      log("if");
+      
       isTextLoading = true;
       setState(() {});
     }
@@ -300,20 +298,15 @@ class _HomePageState extends State<HomePage> {
                           fontSize: 22,
                           color: Colors.white,
                         ),
-
                         suffixIcon: IconButton(
-                            onPressed: (){
+                            onPressed: () {
                               isTextLoading = false;
-                              setState(() {
-
-                              });
+                              setState(() {});
                             },
                             icon: const Icon(
                               Icons.map,
                               color: Colors.white,
-                            )
-                        ),
-
+                            )),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(20),
                         ),
@@ -428,55 +421,52 @@ class _HomePageState extends State<HomePage> {
                         ),
                       )
                     : Expanded(
-                      child: Column(
-                        children: [
-                          Visibility(
-                            visible: !isTextLoading,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                GestureDetector(
-                                  onTap: ()async{
-                                    car = true;
-                                  },
-                                  child: Container(
-                                    height: 50,
-                                    width: 70,
-                                    decoration: BoxDecoration(
-                                        color: Colors.black,
-                                        borderRadius: BorderRadius.circular(15)
-                                    ),
-                                    child: const Icon(
-                                      Icons.car_crash,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-
-                                const SizedBox(width: 10),
-
-                                GestureDetector(
-                                  onTap: (){
-                                    car = false;
-                                  },
-                                  child: Container(
-                                    height: 50,
-                                    width: 70,
-                                    decoration: BoxDecoration(
-                                        color: Colors.black,
-                                        borderRadius: BorderRadius.circular(15)
-                                    ),
-                                    child: const Icon(
-                                      Icons.motorcycle,
-                                      color: Colors.white,
+                        child: Column(
+                          children: [
+                            Visibility(
+                              visible: !isTextLoading,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  GestureDetector(
+                                    onTap: () async {
+                                      car = true;
+                                    },
+                                    child: Container(
+                                      height: 50,
+                                      width: 70,
+                                      decoration: BoxDecoration(
+                                          color: Colors.black,
+                                          borderRadius:
+                                              BorderRadius.circular(15)),
+                                      child: const Icon(
+                                        Icons.car_crash,
+                                        color: Colors.white,
+                                      ),
                                     ),
                                   ),
-                                )
-                              ],
+                                  const SizedBox(width: 10),
+                                  GestureDetector(
+                                    onTap: () {
+                                      car = false;
+                                    },
+                                    child: Container(
+                                      height: 50,
+                                      width: 70,
+                                      decoration: BoxDecoration(
+                                          color: Colors.black,
+                                          borderRadius:
+                                              BorderRadius.circular(15)),
+                                      child: const Icon(
+                                        Icons.motorcycle,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  )
+                                ],
+                              ),
                             ),
-                          ),
-                      
-                          Expanded(
+                            Expanded(
                               child: YandexMap(
                                 nightModeEnabled: true,
                                 mode2DEnabled: true,
@@ -491,9 +481,9 @@ class _HomePageState extends State<HomePage> {
                                 mapObjects: mapObjects,
                               ),
                             ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
                 Padding(
                   padding: const EdgeInsets.only(bottom: 10),
                   child: Container(

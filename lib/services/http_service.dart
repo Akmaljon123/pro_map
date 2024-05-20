@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer';
 import 'dart:io';
 
 class HttpService {
@@ -17,7 +16,6 @@ class HttpService {
       request.headers.set("Accept", "application/json");
 
       HttpClientResponse response = await request.close();
-      log("${response.statusCode}");
       if (response.statusCode == 200 || response.statusCode == 201) {
         String data = await response.transform(utf8.decoder).join();
         return data;
@@ -25,7 +23,6 @@ class HttpService {
         return null;
       }
     } catch (e) {
-      log("Error: $e");
       return null;
     } finally {
       httpClient.close();
